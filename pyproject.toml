@@ -9,6 +9,6 @@ Repository = "https://github.com/hayde0096/Comfyui-EasySettingpipes"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "Hayde00096"
+PublisherId = "hayde00096"
 DisplayName = "EasySettingPips"
 Icon = ""
