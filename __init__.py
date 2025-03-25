@@ -1,0 +1,4 @@
+from .node import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+# 导出必要的映射，让 ComfyUI 能够识别自定义节点
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

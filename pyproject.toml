@@ -1,7 +1,7 @@
 [project]
-name = "Comfyui-EasySettingPips"
+name = "Comfyui-EasySettingPipes"
 description = "Just a Sampler and another settings pipe for comfyui"
-version = "0.1.2"
+version = "0.1.3"
 license = {text = "MIT License"} 
 
 [project.urls]
@@ -10,5 +10,5 @@ Repository = "https://github.com/hayde0096/Comfyui-EasySettingpipes"
 
 [tool.comfy]
 PublisherId = "hayde0096"
-DisplayName = "EasySettingPips"
+DisplayName = "EasySettingPipes"
 Icon = ""
