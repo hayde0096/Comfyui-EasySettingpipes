@@ -5,7 +5,7 @@ version = "1.0.0"
 license = "LICENSE"
 
 [project.urls]
-Repository = "Hayde"
+Repository = "https://github.com/hayde0096/Comfyui-EasySettingpipes"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
