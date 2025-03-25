@@ -1,6 +1,6 @@
 [project]
 name = "Comfyui-EasySettingPips"
-description = ""
+description = "Just a Sampler and another settings pipe for comfyui"
 version = "0.1.1"
 license = {text = "MIT License"} 
 
