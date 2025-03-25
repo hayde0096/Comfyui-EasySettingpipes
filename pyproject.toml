@@ -1,14 +1,14 @@
 [project]
-name = ""
+name = "Comfyui-EasySettingPips"
 description = ""
 version = "1.0.0"
 license = "LICENSE"
 
 [project.urls]
-Repository = ""
+Repository = "Hayde"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
-DisplayName = "ComfyUI-AIT"
+PublisherId = "Hayde"
+DisplayName = "EasySettingPips"
 Icon = ""
