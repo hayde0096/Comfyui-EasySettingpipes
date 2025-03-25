@@ -2,7 +2,6 @@
 name = "Comfyui-EasySettingPips"
 description = ""
 version = "1.0.0"
-license = "LICENSE"
 
 [project.urls]
 Repository = "https://github.com/hayde0096/Comfyui-EasySettingpipes"
