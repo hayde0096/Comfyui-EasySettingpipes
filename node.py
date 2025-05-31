@@ -56,7 +56,7 @@ class SamplerSetup:
         return {
             "required": {
                 "steps": ("INT", {"default": 20, "min": -1000, "max": 1000, "step": 1}),
-                "cfg": ("FLOAT", {"default": 7.0, "min": -100.0, "max": 100.0, "step": 0.5}),
+                "cfg": ("FLOAT", {"default": 7.0, "min": -100.0, "max": 100.0, "step": 0.1}),
                 "clip_skip": ("INT", {"default": -1, "min": -100, "max": 100, "step": 1}),
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS,),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
