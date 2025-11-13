@@ -35,7 +35,7 @@ class ConvertAny:
     RETURN_TYPES = (any_type,)
     RETURN_NAMES = ("Any_Output",)
     FUNCTION = "convert_any"
-    CATEGORY = "Easysittingpipes"  
+    CATEGORY = "easy sitting"  
     
     def convert_any(self, Any_input: str = ""):
         # 直接返回输入参数，不做任何修改
@@ -60,8 +60,8 @@ class SamplerSetup:
                 "clip_skip": ("INT", {"default": -1, "min": -100, "max": 100, "step": 1}),
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS,),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
-                "width": ("INT", {"default": 1024, "min": 32, "max": 8192, "step": 16}),
-                "height": ("INT", {"default": 1024, "min": 32, "max": 8192, "step": 16}),
+                "width": ("INT", {"default": 1024, "min": 32, "max": 8192, "step": 8}),
+                "height": ("INT", {"default": 1024, "min": 32, "max": 8192, "step": 8}),
                 "swap_wh": ("BOOLEAN", {"default": False, "label_on": "Swap", "label_off": "Keep"}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 128}), 
             },
@@ -70,7 +70,7 @@ class SamplerSetup:
     RETURN_TYPES = ("SETUPPIPE",)
     RETURN_NAMES = ("setup_pipe",)
     FUNCTION = "build_pipe"
-    CATEGORY = "Easysittingpipes"  
+    CATEGORY = "easy sitting"  
 
     def build_pipe(self, steps, cfg, clip_skip, sampler_name, scheduler, 
                    width, height, swap_wh, batch_size):
@@ -120,7 +120,7 @@ class SamplerSetupUnpack:
         "width", "height", "batch_size", 
     )
     FUNCTION = "unpack_pipe"
-    CATEGORY = "Easysittingpipes"  
+    CATEGORY = "easy sitting"  
 
     def unpack_pipe(self, setup_pipe):
         # 安全地获取采样器和调度器值

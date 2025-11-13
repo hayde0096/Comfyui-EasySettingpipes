@@ -1,9 +1,148 @@
-Just a custom Pipe and settings node designed to streamline workflows. It eliminates the need for bulky multi-output nodes, saving space and reducing clutter for comfyui
-A lightweight custom pipeline node that integrates key sampling parameters (steps, cfg, clip_skip, sampler, scheduler, width, height, batch_size) with a toggle for quick width/height swapping. Also includes an unpack node to deconstruct the output pipe for further processing.
-Additionally, include a "Convert Any Node" utility to fix compatibility issues where some sampler nodes cannot use the standard sampler and scheduler inputs.
+# ComfyUI Easy Setting Pipes
 
-只是单纯的添加了一个自定义Pipe和设置节点以简洁化工作流，使用户不需要在工作流中摆出一个拥有许多输出端口的节点占用额外空间。
-包含了"steps", "cfg", "clip_skip", "sampler", "scheduler", "width", "height", "batch_size" 与一键切换宽高输出的开关，以及把输出pipe解包的unpack节点。
-此外，加入一个 “Convert Any Node” 工具，用于修复某些采样器节点无法使用标准采样器和调度器输入的问题。
+A collection of utility nodes for ComfyUI to streamline workflows and manage LoRAs efficiently.
+
+## Overview
+
+Easy Setting Pipes provides three main components:
+
+- Sampler Setup Nodes: Streamlined configuration nodes for sampling parameters
+- Power LoRA Loader: Advanced LoRA management with support for multiple models  
+- Convert Any Node: Utility node for fixing compatibility issues
+
+## Features
+
+### Sampler Setup Nodes
+
+A lightweight custom pipeline node that integrates key sampling parameters into a single compact node:
+
+- Integrated Parameters: steps, cfg, clip_skip, sampler, scheduler, width, height, batch_size
+- Quick Width/Height Swap: One-click toggle to swap width and height values
+- Unpack Node: Deconstruct the output pipe for further processing
+- Space Saving: Eliminates the need for bulky multi-output nodes
+
+Available Nodes:
+- SamplerSetup: Pack sampling parameters into a single pipe
+- SamplerSetupUnpack: Unpack pipe to get individual parameters
+
+### Power LoRA Loader & Stacker
+
+A powerful and user-friendly LoRA management plugin with advanced features:
+
+- Multiple LoRA Management: Load and manage up to 100 LoRAs in a single node
+- Drag & Drop Reordering: Easily rearrange LoRAs by dragging
+- Flexible Strength Modes: Switch between single strength and dual (Model/Clip) modes
+- Visual Feedback: Color-coded strength controls and toggle states
+- Batch Toggle: Enable/disable all LoRAs with a single click
+- Right-Click Menu: Quick access to enable/disable or delete LoRAs
+
+Available Nodes:
+
+**Power LoRA Loader**
+- Loads LoRAs and applies them to your model and clip
+- Supports both single and dual strength modes
+- Chainable with other LoRA loaders
+- Inputs: model, clip, optional lora_stack
+- Outputs: model, clip
+
+**Power LoRA Stacker**
+- Creates a LoRA stack for use with other nodes
+- Compatible with efficiency nodes and stack-based workflows
+- Supports both single and dual strength modes
+- Inputs: optional lora_stack (for chaining)
+- Outputs: lora_stack
+
+### Convert Any Node
+
+A utility node to fix compatibility issues where some sampler nodes cannot use standard sampler and scheduler inputs. This node accepts any input type and passes it through without modification.
+
+## Screenshots
+
 ![Example1](https://github.com/user-attachments/assets/24945acb-39b2-41c0-9855-757c9cfd15f5)
+
 ![Example2](https://github.com/user-attachments/assets/0d2c8237-2747-409d-8914-ab78200cd498)
+
+## Installation
+
+### Method 1: ComfyUI Manager (Recommended)
+
+1. Open ComfyUI Manager
+2. Search for 'Easy Setting Pipes'
+3. Click Install
+
+### Method 2: Manual Installation
+
+1. Navigate to your ComfyUI custom nodes folder:
+   - cd ComfyUI/custom_nodes/
+
+2. Clone this repository:
+   - git clone https://github.com/yourusername/Comfyui-EasySettingPipes.git
+
+3. Restart ComfyUI
+
+## Usage
+
+### Sampler Setup Usage
+
+1. Add a SamplerSetup node to your workflow
+2. Configure the sampling parameters:
+   - steps: Number of sampling steps (default: 20)
+   - cfg: Guidance scale (default: 7.0)
+   - clip_skip: CLIP layer skip value (default: -1)
+   - sampler_name: Select sampler algorithm
+   - scheduler: Select noise scheduler
+   - width: Image width (default: 1024)
+   - height: Image height (default: 1024)
+   - swap_wh: Toggle to quickly swap width and height
+   - batch_size: Batch size (default: 1)
+
+3. Connect the setup_pipe output to other nodes
+4. Use SamplerSetupUnpack to extract individual parameters when needed
+
+### Power LoRA Loader Usage
+
+1. Add a Power LoRA Loader or Power LoRA Stacker node to your workflow
+2. Click the 'Add LoRA' button to select a LoRA from your models
+3. Adjust strength values by:
+   - Clicking the arrow buttons (0.05)
+   - Dragging the value left/right for fine control
+   - Clicking the value to enter a precise number
+4. Toggle individual LoRAs on/off by clicking the switch
+5. Use 'Toggle All' to enable/disable all LoRAs at once
+
+#### Strength Modes
+
+Click the mode switch button to toggle between:
+
+- Strength Mode: Single strength value (applied to both model and clip)
+- Model/Clip Mode: Separate strength values for model and clip
+  - Left value (orange): Model strength
+  - Right value (cyan): Clip strength
+
+#### Drag & Drop Reordering
+
+1. Click and hold on a LoRA name
+2. Drag up or down to reorder
+3. Release to place in new position
+
+#### Right-Click Menu
+
+Right-click on any LoRA to:
+- Toggle it on/off
+- Delete it from the list
+
+## Compatibility
+
+- ComfyUI Version: Latest (tested with 2024+ versions)
+- Python: 3.9+
+- OS: Windows, Linux, macOS
+
+## License
+
+MIT License
+
+## Credits
+
+- Original concept by the ComfyUI community
+- Inspired by efficient workflow design patterns
+- Built with flexibility and user experience in mind
