@@ -1,23 +1,51 @@
 import { app } from "../../scripts/app.js";
 
-// ===== 辅助函数 =====
+let loraListCache = null;
+let loraListPromise = null;
 
-/**
- * 判断当前画布是否处于低质量模式（缩放比例 <= 0.5）
- * @returns {boolean} 是否为低质量模式
- */
-function isLowQuality() {
-    const canvas = app.canvas;
-    return ((canvas.ds?.scale) || 1) <= 0.5;
+function getLoraList() {
+    if (loraListCache !== null) {
+        return Promise.resolve(loraListCache);
+    }
+    if (loraListPromise !== null) {
+        return loraListPromise;
+    }
+    loraListPromise = fetchLoraList().then(list => {
+        loraListPromise = null;
+        return list;
+    }).catch(err => {
+        loraListPromise = null;
+        console.warn("获取 LoRA 列表失败:", err);
+        return [];
+    });
+    return loraListPromise;
 }
 
-/**
- * 将字符串裁剪以适应指定宽度，超出部分用省略号替代
- * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
- * @param {string} str - 要裁剪的字符串
- * @param {number} maxWidth - 最大宽度（像素）
- * @returns {string} 裁剪后的字符串
- */
+function fetchLoraList() {
+    return fetch("/models/loras")
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            // 确保是字符串数组
+            loraListCache = Array.isArray(data) ? data : [];
+            return loraListCache;
+        })
+        .catch(error => {
+            console.error("Failed to load LoRA list:", error);
+            return [];
+        });
+}
+
+function preloadLoraList() {
+    getLoraList().catch(() => {});
+}
+
+function isLowQuality() {
+    return ((app.canvas.ds?.scale) || 1) <= 0.5;
+}
+
 function fitString(ctx, str, maxWidth) {
     let width = ctx.measureText(str).width;
     const ellipsis = "…";
@@ -26,7 +54,6 @@ function fitString(ctx, str, maxWidth) {
         return str;
     }
     
-    // 二分查找最佳截断位置
     let min = 0;
     let max = str.length;
     while (min <= max) {
@@ -42,23 +69,12 @@ function fitString(ctx, str, maxWidth) {
     return str.substring(0, max) + ellipsis;
 }
 
-/**
- * 绘制切换开关（Toggle）控件
- * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
- * @param {Object} options - 绘制选项
- * @param {number} options.posX - X 坐标
- * @param {number} options.posY - Y 坐标
- * @param {number} options.height - 高度
- * @param {boolean|null} options.value - 开关状态（true/false/null）
- * @returns {[number, number]} [起始 X 坐标, 宽度]
- */
 function drawTogglePart(ctx, options) {
     const lowQuality = isLowQuality();
     ctx.save();
     const { posX, posY, height, value } = options;
     const toggleRadius = height * 0.36;
     const toggleBgWidth = height * 1.5;
-    
     if (!lowQuality) {
         ctx.beginPath();
         ctx.roundRect(posX + 4, posY + 4, toggleBgWidth - 8, height - 8, [height * 0.5]);
@@ -67,31 +83,17 @@ function drawTogglePart(ctx, options) {
         ctx.fill();
         ctx.globalAlpha = app.canvas.editor_alpha;
     }
-    
     ctx.fillStyle = value === true ? "#89B" : "#888";
     const toggleX = lowQuality || value === false
         ? posX + height * 0.5
-        : value === true
-            ? posX + height
-            : posX + height * 0.75;
+        : value === true ? posX + height : posX + height * 0.75;
     ctx.beginPath();
     ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-    
     return [posX, toggleBgWidth];
 }
 
-/**
- * 绘制圆角矩形背景
- * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
- * @param {Object} options - 绘制选项
- * @param {[number, number]} options.pos - 位置 [x, y]
- * @param {[number, number]} options.size - 尺寸 [width, height]
- * @param {string} [options.colorStroke] - 边框颜色
- * @param {string} [options.colorBackground] - 背景颜色
- * @param {number} [options.borderRadius] - 圆角半径
- */
 function drawRoundedRectangle(ctx, options) {
     const lowQuality = isLowQuality();
     ctx.save();
@@ -107,18 +109,6 @@ function drawRoundedRectangle(ctx, options) {
     ctx.restore();
 }
 
-/**
- * 绘制数字调节控件（左箭头、数字、右箭头）
- * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
- * @param {Object} options - 绘制选项
- * @param {number} options.posX - X 坐标
- * @param {number} options.posY - Y 坐标
- * @param {number} options.height - 高度
- * @param {number} options.value - 显示的数值
- * @param {number} [options.direction] - 方向（-1 表示从右向左绘制）
- * @param {string} [options.textColor] - 文字颜色
- * @returns {[[number, number], [number, number], [number, number]]} [左箭头bounds, 数字bounds, 右箭头bounds]
- */
 function drawNumberWidgetPart(ctx, options) {
     const arrowWidth = 9;
     const arrowHeight = 10;
@@ -134,13 +124,11 @@ function drawNumberWidgetPart(ctx, options) {
         posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
     }
     
-    // 左箭头 (三角形)
     ctx.fill(new Path2D(`M ${posX} ${midY} l ${arrowWidth} ${arrowHeight / 2} l 0 -${arrowHeight} L ${posX} ${midY} z`));
     const xBoundsArrowLess = [posX, arrowWidth];
     
     posX += arrowWidth + innerMargin;
     
-    // 数字
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const oldFillStyle = ctx.fillStyle;
@@ -153,7 +141,6 @@ function drawNumberWidgetPart(ctx, options) {
     
     posX += numberWidth + innerMargin;
     
-    // 右箭头 (三角形)
     ctx.fill(new Path2D(`M ${posX} ${midY - arrowHeight / 2} l ${arrowWidth} ${arrowHeight / 2} l -${arrowWidth} ${arrowHeight / 2} v -${arrowHeight} z`));
     const xBoundsArrowMore = [posX, arrowWidth];
     
@@ -161,44 +148,6 @@ function drawNumberWidgetPart(ctx, options) {
     
     return [xBoundsArrowLess, xBoundsNumber, xBoundsArrowMore];
 }
-
-/**
- * 获取可用的 LoRA 列表
- * 优先尝试从 rgthree API 获取，失败则从 ComfyUI object_info 获取
- * @returns {Promise<string[]>} LoRA 文件名列表
- */
-async function getLoraList() {
-    try {
-        try {
-            const resp = await fetch("/rgthree/api/loras?format=details");
-            if (resp.ok) {
-                const data = await resp.json();
-                return data.map(item => item.file);
-            }
-        } catch (e) {}
-        
-        const resp = await fetch("/object_info");
-        if (resp.ok) {
-            const data = await resp.json();
-            if (data.LoraLoader?.input?.required?.lora_name) {
-                const loraNameInput = data.LoraLoader.input.required.lora_name;
-                if (Array.isArray(loraNameInput) && Array.isArray(loraNameInput[0])) {
-                    return loraNameInput[0];
-                }
-            }
-        }
-    } catch (e) {
-        console.error("[PowerLora] Failed to fetch loras:", e);
-    }
-    return [];
-}
-
-/**
- * 显示 LoRA 选择菜单
- * @param {Event} event - 鼠标事件
- * @param {Function} callback - 选择回调函数
- * @param {string[]} loras - LoRA 列表
- */
 function showLoraMenu(event, callback, loras) {
     new LiteGraph.ContextMenu(
         loras,
@@ -208,33 +157,18 @@ function showLoraMenu(event, callback, loras) {
             scale: Math.max(1, app.canvas.ds.scale),
             className: "dark",
             callback: (value) => {
-                const loraName = typeof value === "string" ? value : value?.content;
-                if (loraName) {
-                    callback(loraName);
-                }
+                callback(value);
             }
         },
         window
     );
 }
 
-// ===== 拖拽状态管理混入 =====
-
-/**
- * 拖拽状态管理混入类
- * 提供通用的拖拽功能和状态管理
- */
 class DragStateMixin {
-    /**
-     * 初始化拖拽相关状态
-     */
     initDragState() {
-        // 拖拽强度调整状态
         this.draggingStrength = false;
         this.dragStartX = 0;
         this.dragStartValue = 0;
-        
-        // 拖拽排序状态
         this.isDragging = false;
         this.dragStartY = 0;
         this.dragOffset = 0;
@@ -243,13 +177,6 @@ class DragStateMixin {
         this.potentialDrag = false;
     }
     
-    /**
-     * 计算拖拽后实际的 Y 坐标（考虑拖拽偏移和其他 widget 的影响）
-     * @param {number} posY - 原始 Y 坐标
-     * @param {Object} node - 节点对象
-     * @param {number} widgetWidth - Widget 宽度
-     * @returns {number} 实际 Y 坐标
-     */
     calculateActualPosY(posY, node, widgetWidth) {
         let actualPosY = posY;
         
@@ -258,24 +185,31 @@ class DragStateMixin {
         } else if (node.draggingWidget && node.draggingWidget !== this && node.draggingWidget.isDragging) {
             const loraWidgets = node.widgets.filter(w => w.name?.startsWith("lora_"));
             const dragWidget = node.draggingWidget;
-            const myCurrentIndex = loraWidgets.indexOf(this);
+            const myIndex = loraWidgets.indexOf(this);
             const dragStartIdx = dragWidget.dragStartIndex;
             
-            if (myCurrentIndex >= 0 && dragStartIdx >= 0) {
+            if (myIndex >= 0 && dragStartIdx >= 0) {
                 const H = LiteGraph.NODE_WIDGET_HEIGHT;
+                const SPACING = 4;
+                const STEP = H + SPACING;
                 
-                // 计算被拖动 widget 的目标索引（与 handleDragEnd 中的逻辑一致）
-                let dragTargetIndex = dragStartIdx + Math.round((dragWidget.dragOffset + (dragWidget.dragOffset > 0 ? H/2 : -H/2)) / H);
+                let dragTargetIndex = dragStartIdx;
+                if (dragWidget.dragOffset > H / 2) {
+                    dragTargetIndex = dragStartIdx + Math.floor((dragWidget.dragOffset - H / 2) / STEP) + 1;
+                } else if (dragWidget.dragOffset < -H / 2) {
+                    dragTargetIndex = dragStartIdx + Math.ceil((dragWidget.dragOffset + H / 2) / STEP) - 1;
+                }
                 dragTargetIndex = Math.max(0, Math.min(loraWidgets.length - 1, dragTargetIndex));
                 
-                // 如果当前 widget 会被拖动的 widget 越过，则让开
                 if (dragTargetIndex !== dragStartIdx) {
-                    if (dragStartIdx < myCurrentIndex && dragTargetIndex >= myCurrentIndex) {
-                        // 被拖动的 widget 从上往下越过当前 widget，当前 widget 需要上移
-                        actualPosY = posY - H;
-                    } else if (dragStartIdx > myCurrentIndex && dragTargetIndex <= myCurrentIndex) {
-                        // 被拖动的 widget 从下往上越过当前 widget，当前 widget 需要下移
-                        actualPosY = posY + H;
+                    if (dragStartIdx < dragTargetIndex) {
+                        if (myIndex > dragStartIdx && myIndex <= dragTargetIndex) {
+                            actualPosY = posY - STEP;
+                        }
+                    } else if (dragStartIdx > dragTargetIndex) {
+                        if (myIndex >= dragTargetIndex && myIndex < dragStartIdx) {
+                            actualPosY = posY + STEP;
+                        }
                     }
                 }
             }
@@ -284,17 +218,10 @@ class DragStateMixin {
         return actualPosY;
     }
     
-    /**
-     * 处理拖拽开始检测
-     * @param {Event} event - 鼠标事件
-     * @param {Object} node - 节点对象
-     * @returns {boolean} 是否开始拖拽
-     */
     checkDragStart(event, node) {
         if (this.potentialDrag && !this.isDragging) {
             const deltaY = Math.abs(event.canvasY - this.dragStartY);
             const deltaTime = Date.now() - this.dragStartTime;
-            
             if (deltaY > 5 || deltaTime > 200) {
                 const loraWidgets = node.widgets.filter(w => w.name?.startsWith("lora_"));
                 this.dragStartIndex = loraWidgets.indexOf(this);
@@ -310,25 +237,24 @@ class DragStateMixin {
         return false;
     }
     
-    /**
-     * 处理拖拽结束，重新排序 widgets
-     * @param {Object} node - 节点对象
-     */
     handleDragEnd(node) {
         const loraWidgets = node.widgets.filter(w => w.name?.startsWith("lora_"));
         const H = LiteGraph.NODE_WIDGET_HEIGHT;
+        const SPACING = 4;
+        const STEP = H + SPACING;
         
-        // 计算目标位置：当前位置 + 拖拽偏移，然后四舍五入到最近的widget高度
-        // 使用 (dragOffset + H/2) 来实现"跨过中心才交换"的逻辑
-        let targetIndex = this.dragStartIndex + Math.round((this.dragOffset + (this.dragOffset > 0 ? H/2 : -H/2)) / H);
+        let targetIndex = this.dragStartIndex;
+        if (this.dragOffset > STEP / 2) {
+            targetIndex = this.dragStartIndex + Math.floor((this.dragOffset - STEP / 2) / STEP) + 1;
+        } else if (this.dragOffset < -STEP / 2) {
+            targetIndex = this.dragStartIndex + Math.ceil((this.dragOffset + STEP / 2) / STEP) - 1;
+        }
         targetIndex = Math.max(0, Math.min(loraWidgets.length - 1, targetIndex));
         
         if (targetIndex !== this.dragStartIndex) {
             const controlIndex = node.widgets.findIndex(w => w.name === "control_row");
             const myIndex = node.widgets.indexOf(this);
-            
             node.widgets.splice(myIndex, 1);
-            
             const insertPosition = controlIndex >= 0 ? controlIndex + 1 + targetIndex : targetIndex;
             node.widgets.splice(insertPosition, 0, this);
         }
@@ -344,29 +270,18 @@ class DragStateMixin {
 
 // ===== 统一 LoRA Widget（支持单/双强度切换）=====
 
-/**
- * 统一 LoRA Widget - 支持单强度或双强度模式
- * @param {string} name - Widget 名称
- * @param {boolean} dualMode - 是否为双强度模式（true=Stacker模式，false=Loader模式）
- */
 class LoraWidget {
     constructor(name, dualMode = false) {
         this.name = name;
         this.type = "custom";
         this.dualMode = dualMode;
-        this.value = { 
-            on: true, 
-            lora: "None", 
-            strength: 1.0, 
-            strengthTwo: 1.0
-        };
+        this.value = { on: true, lora: "None", strength: 1.0, strengthTwo: 1.0 };
         this.options = { serialize: true };
         this.y = 0;
         this.last_y = 0;
         
         DragStateMixin.prototype.initDragState.call(this);
         this.draggingStrengthTwo = false;
-        
         this.hitAreas = {
             toggle: { bounds: [0, 0] },
             lora: { bounds: [0, 0] },
@@ -394,7 +309,9 @@ class LoraWidget {
             this, posY, node, widgetWidth
         );
         
-        this.last_y = posY;
+        // ⚠️ 重要：设置 last_y 为实际绘制的位置，而不是输入的 posY
+        // 这样 mouse 事件中的 localY 计算才能正确匹配实际绘制的位置
+        this.last_y = actualPosY;
         const midY = actualPosY + H * 0.5;
         let posX = margin;
         
@@ -427,7 +344,6 @@ class LoraWidget {
         ctx.restore();
         ctx.save();
         
-        // 绘制开关
         this.hitAreas.toggle.bounds = drawTogglePart(ctx, {
             posX,
             posY: actualPosY,
@@ -442,10 +358,8 @@ class LoraWidget {
         
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         
-        // 右侧：绘制强度控件
         let rposX = node.size[0] - margin - innerMargin - innerMargin;
         
-        // 根据模式决定显示一个还是两个强度控件
         if (this.dualMode || node.dualStrengthMode) {
             const strengthTwoValue = this.value.strengthTwo ?? 1;
             const [leftArrow2, text2, rightArrow2] = drawNumberWidgetPart(ctx, {
@@ -512,15 +426,21 @@ class LoraWidget {
             }
             
             const decHit = this.hitAreas.strengthDec.bounds;
-            if (pos[0] >= decHit[0] && pos[0] <= decHit[0] + decHit[1]) {
+            if (pos[0] >= decHit[0] - 6 && pos[0] <= decHit[0] + decHit[1] + 6) {
                 this.value.strength = Math.max(-10.0, Math.round((this.value.strength - 0.05) * 100) / 100);
+                if (!(this.dualMode || node.dualStrengthMode)) {
+                    this.value.strengthTwo = this.value.strength;
+                }
                 node.setDirtyCanvas(true, true);
                 return true;
             }
             
             const incHit = this.hitAreas.strengthInc.bounds;
-            if (pos[0] >= incHit[0] && pos[0] <= incHit[0] + incHit[1]) {
+            if (pos[0] >= incHit[0] - 6 && pos[0] <= incHit[0] + incHit[1] + 6) {
                 this.value.strength = Math.min(10.0, Math.round((this.value.strength + 0.05) * 100) / 100);
+                if (!(this.dualMode || node.dualStrengthMode)) {
+                    this.value.strengthTwo = this.value.strength;
+                }
                 node.setDirtyCanvas(true, true);
                 return true;
             }
@@ -536,14 +456,14 @@ class LoraWidget {
             
             if (this.dualMode || node.dualStrengthMode) {
                 const dec2Hit = this.hitAreas.strengthTwoDec.bounds;
-                if (pos[0] >= dec2Hit[0] && pos[0] <= dec2Hit[0] + dec2Hit[1]) {
+                if (pos[0] >= dec2Hit[0] - 6 && pos[0] <= dec2Hit[0] + dec2Hit[1] + 6) {
                     this.value.strengthTwo = Math.max(-10.0, Math.round((this.value.strengthTwo - 0.05) * 100) / 100);
                     node.setDirtyCanvas(true, true);
                     return true;
                 }
                 
                 const inc2Hit = this.hitAreas.strengthTwoInc.bounds;
-                if (pos[0] >= inc2Hit[0] && pos[0] <= inc2Hit[0] + inc2Hit[1]) {
+                if (pos[0] >= inc2Hit[0] - 6 && pos[0] <= inc2Hit[0] + inc2Hit[1] + 6) {
                     this.value.strengthTwo = Math.min(10.0, Math.round((this.value.strengthTwo + 0.05) * 100) / 100);
                     node.setDirtyCanvas(true, true);
                     return true;
@@ -587,6 +507,9 @@ class LoraWidget {
                 let newStrength = this.dragStartValue + delta;
                 newStrength = Math.max(-10.0, Math.min(10.0, newStrength));
                 this.value.strength = Math.round(newStrength * 100) / 100;
+                if (!(this.dualMode || node.dualStrengthMode)) {
+                    this.value.strengthTwo = this.value.strength;
+                }
                 node.setDirtyCanvas(true, true);
                 return true;
             }
@@ -614,7 +537,7 @@ class LoraWidget {
                 if (pos[0] >= loraHit[0] && pos[0] <= loraHit[0] + loraHit[1]) {
                     getLoraList().then(loras => {
                         showLoraMenu(event, (value) => {
-                            if (typeof value === "string" && value !== "None") {
+                            if (value && value !== "None") {
                                 this.value.lora = value;
                                 node.setDirtyCanvas(true, true);
                             }
@@ -637,6 +560,9 @@ class LoraWidget {
                             const num = parseFloat(v);
                             if (!isNaN(num)) {
                                 this.value.strength = parseFloat(Math.max(-10.0, Math.min(10.0, num)).toFixed(2));
+                                if (!(this.dualMode || node.dualStrengthMode)) {
+                                    this.value.strengthTwo = this.value.strength;
+                                }
                                 node.setDirtyCanvas(true, true);
                             }
                         },
@@ -683,12 +609,6 @@ class LoraWidget {
     }
 }
 
-// ===== 控制行 Widget =====
-
-/**
- * 控制行 Widget - 提供全局控制功能
- * 包含"Toggle All"开关、"Add Lora"按钮和"Single/Dual"模式切换
- */
 class ControlRowWidget {
     constructor(name = "control_row") {
         this.name = name;
@@ -850,14 +770,6 @@ class ControlRowWidget {
     }
 }
 
-// ===== 节点注册 =====
-
-/**
- * 注册 Power LoRA 节点到 ComfyUI
- * @param {Object} nodeData - 节点数据，包含节点名称
- * @param {boolean} defaultDualMode - 默认是否启用双强度模式
- * @returns {Object} ComfyUI 扩展配置对象
- */
 function registerPowerLoraNode(nodeData, defaultDualMode = false) {
     const nodeName = nodeData.name;
     
@@ -872,9 +784,8 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
                     
                     this.serialize_widgets = true;
                     this.loraWidgetCounter = 0;
-                    this.dualStrengthMode = defaultDualMode;  // 初始化强度模式
-                    
-                    // 控制行放在最前面
+                    this.dualStrengthMode = defaultDualMode;
+                    preloadLoraList();
                     const controlWidget = new ControlRowWidget("control_row");
                     this.addCustomWidget(controlWidget);
                     
@@ -890,8 +801,6 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
                     
                     this.loraWidgetCounter = (this.loraWidgetCounter || 0) + 1;
                     const widget = new LoraWidget(`lora_${this.loraWidgetCounter}`, this.dualStrengthMode);
-                    
-                    // 设置默认值
                     widget.value = { on: true, lora: loraName, strength: 1.0, strengthTwo: 1.0 };
                     
                     widget.options = widget.options || {};
@@ -919,20 +828,18 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
                         return slot;
                     }
                     
-                    // 检查是否点击在 lora widget 上
                     if (this.widgets) {
-                        let lastWidget = null;
+                        const H = LiteGraph.NODE_WIDGET_HEIGHT;
                         for (const widget of this.widgets) {
-                            if (!widget.last_y) return null;
-                            if (canvasY > this.pos[1] + widget.last_y) {
-                                lastWidget = widget;
-                                continue;
+                            if (!widget.last_y) continue;
+                            const widgetStartY = this.pos[1] + widget.last_y;
+                            const widgetEndY = widgetStartY + H;
+                            if (canvasY >= widgetStartY && canvasY < widgetEndY) {
+                                if (widget.name?.startsWith("lora_")) {
+                                    return { widget: widget, output: { type: "LORA_WIDGET" } };
+                                }
+                                return null;
                             }
-                            break;
-                        }
-                        
-                        if (lastWidget?.name?.startsWith("lora_")) {
-                            return { widget: lastWidget, output: { type: "LORA_WIDGET" } };
                         }
                     }
                     
@@ -1018,3 +925,9 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
 
 app.registerExtension(registerPowerLoraNode({ name: "PowerLoraLoader" }, false));
 app.registerExtension(registerPowerLoraNode({ name: "PowerLoraStacker" }, false));
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', preloadLoraList);
+} else {
+    preloadLoraList();
+}

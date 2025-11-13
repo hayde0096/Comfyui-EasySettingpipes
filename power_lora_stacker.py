@@ -131,5 +131,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PowerLoraStacker": "Power Lora Stacker 📚",
+    "PowerLoraStacker": "Power Lora Stacker",
 }
