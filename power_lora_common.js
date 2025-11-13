@@ -42,6 +42,15 @@ function preloadLoraList() {
     getLoraList().catch(() => {});
 }
 
+function getColorFromPalette(colorType) {
+    // 硬编码的 MODEL 和 CLIP 颜色
+    const colors = {
+        "MODEL": "#B39DDB",   // 紫色 (MODEL)
+        "CLIP": "#FFD500"      // 金黄色 (CLIP)
+    };
+    return colors[colorType] || "#FFFFFF";
+}
+
 function isLowQuality() {
     return ((app.canvas.ds?.scale) || 1) <= 0.5;
 }
@@ -124,6 +133,10 @@ function drawNumberWidgetPart(ctx, options) {
         posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
     }
     
+    // 设置箭头和数字的颜色
+    const displayColor = textColor || LiteGraph.WIDGET_TEXT_COLOR;
+    ctx.fillStyle = displayColor;
+    
     ctx.fill(new Path2D(`M ${posX} ${midY} l ${arrowWidth} ${arrowHeight / 2} l 0 -${arrowHeight} L ${posX} ${midY} z`));
     const xBoundsArrowLess = [posX, arrowWidth];
     
@@ -131,12 +144,7 @@ function drawNumberWidgetPart(ctx, options) {
     
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const oldFillStyle = ctx.fillStyle;
-    if (textColor) {
-        ctx.fillStyle = textColor;
-    }
     ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
-    ctx.fillStyle = oldFillStyle;
     const xBoundsNumber = [posX, numberWidth];
     
     posX += numberWidth + innerMargin;
@@ -368,7 +376,7 @@ class LoraWidget {
                 height: H,
                 value: strengthTwoValue,
                 direction: -1,
-                textColor: "#8ac"
+                textColor: getColorFromPalette("CLIP")
             });
             
             this.hitAreas.strengthTwoDec.bounds = leftArrow2;
@@ -385,7 +393,7 @@ class LoraWidget {
             height: H,
             value: strengthValue,
             direction: -1,
-            textColor: this.dualMode || node.dualStrengthMode ? "#ca8" : undefined
+            textColor: this.dualMode || node.dualStrengthMode ? getColorFromPalette("MODEL") : undefined
         });
         
         this.hitAreas.strengthDec.bounds = leftArrow;
@@ -553,13 +561,15 @@ class LoraWidget {
                 
                 const deltaX = Math.abs(event.canvasX - this.dragStartX);
                 if (deltaX < 5) {
+                    const isHelpText = node.dualStrengthMode ? "Model Strength" : "Strength";
                     app.canvas.prompt(
-                        "Model Strength",
+                        isHelpText,
                         this.value.strength,
                         (v) => {
                             const num = parseFloat(v);
                             if (!isNaN(num)) {
                                 this.value.strength = parseFloat(Math.max(-10.0, Math.min(10.0, num)).toFixed(2));
+                                // 单行模式：同步model和clip强度
                                 if (!(this.dualMode || node.dualStrengthMode)) {
                                     this.value.strengthTwo = this.value.strength;
                                 }
@@ -585,6 +595,10 @@ class LoraWidget {
                             const num = parseFloat(v);
                             if (!isNaN(num)) {
                                 this.value.strengthTwo = parseFloat(Math.max(-10.0, Math.min(10.0, num)).toFixed(2));
+                                // 单行模式：同步model强度
+                                if (!(this.dualMode || node.dualStrengthMode)) {
+                                    this.value.strength = this.value.strengthTwo;
+                                }
                                 node.setDirtyCanvas(true, true);
                             }
                         },
@@ -735,12 +749,22 @@ class ControlRowWidget {
             
             const modeHit = this.hitAreas.modeSwitch.bounds;
             if (pos[0] >= modeHit[0] && pos[0] <= modeHit[0] + modeHit[1]) {
+                const wasDualMode = node.dualStrengthMode;
                 node.dualStrengthMode = !node.dualStrengthMode;
                 
                 const loraWidgets = node.widgets.filter(w => w.name?.startsWith("lora_"));
                 loraWidgets.forEach(w => {
                     if (w.dualMode !== undefined) {
                         w.dualMode = node.dualStrengthMode;
+                        
+                        // 从单行切换到双行：复制单行强度到model和clip
+                        if (wasDualMode === false && node.dualStrengthMode === true) {
+                            w.value.strengthTwo = w.value.strength;
+                        }
+                        // 从双行切换到单行：复制model强度到单行
+                        else if (wasDualMode === true && node.dualStrengthMode === false) {
+                            w.value.strength = w.value.strengthTwo;
+                        }
                     }
                 });
                 
