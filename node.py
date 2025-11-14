@@ -4,24 +4,33 @@ import random
 import math
 from nodes import MAX_RESOLUTION
 
-class AnyType(str):
-    """一个特殊类型，可以连接到任何其他类型。来源于 pythongosssss"""
-
-    def __ne__(self, __value: object) -> bool:
-        # 重写不等于方法，始终返回 False，使其可以与任何类型兼容
-        return False
-
-
-any_type = AnyType("*")
+from .easy_sitting_utils import any_type
 
 
 class ConvertAny:
-    # 定义一个可以接收任意类型输入并原样返回的节点
-    # 作用：在不同类型节点间建立连接，绕过类型限制
+    """
+    通用类型转换节点
+    
+    功能：在不同类型节点间建立连接，绕过 ComfyUI 的类型检查限制
+    用途：解决某些采样节点无法直接使用标准采样器和调度器输入的兼容性问题
+    
+    核心原理：
+    - 使用 any_type 类型接受任意输入
+    - 原样返回输入值，不进行任何修改
+    - 作为类型适配器使用
+    """
     
     @classmethod
     def INPUT_TYPES(s):
-        # 定义节点输入，使用 any_type 类型，强制要求输入
+        """定义节点输入类型
+        
+        使用 any_type 类型配合 forceInput 选项：
+        - any_type: 接受任何类型的输入
+        - forceInput: 强制要求输入（不能为空）
+        
+        Returns:
+            节点输入配置字典
+        """
         return {
             "required": {},
             "optional": {
@@ -38,7 +47,17 @@ class ConvertAny:
     CATEGORY = "easy sitting"  
     
     def convert_any(self, Any_input: str = ""):
-        # 直接返回输入参数，不做任何修改
+        """转换任意输入
+        
+        核心功能：原样返回输入值，不进行任何修改
+        用途：作为类型适配器，绕过 ComfyUI 的类型检查
+        
+        Args:
+            Any_input: 任意类型的输入值
+            
+        Returns:
+            原样返回输入值
+        """
         return (Any_input,)
 
 

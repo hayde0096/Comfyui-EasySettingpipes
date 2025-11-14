@@ -10,7 +10,7 @@ import folder_paths
 import comfy.utils
 import comfy.sd
 
-from .easy_sitting_utils import FlexibleOptionalInputType, any_type
+from .easy_sitting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -56,17 +56,28 @@ class PowerLoraLoader:
     ) -> Tuple[Any, Optional[Any]]:
         """加载单个 LoRA 模型
         
+        核心功能：
+        - 加载 LoRA 文件并应用到基础模型和 CLIP
+        - 支持强度控制（可分别设置模型和 CLIP 强度）
+        - 实现文件缓存避免重复加载
+        - 错误处理确保节点稳定性
+        
         Args:
             model: 基础模型
             clip: CLIP 模型（可选）
             lora_name: LoRA 文件名
-            strength_model: 模型强度系数
-            strength_clip: CLIP 强度系数
+            strength_model: 模型强度系数（-10.0 到 10.0）
+            strength_clip: CLIP 强度系数（-10.0 到 10.0）
             
         Returns:
             (处理后的模型, 处理后的 CLIP)
+            
+        Note:
+            - 强度为 0 时跳过加载以提升性能
+            - 使用缓存机制避免重复加载相同文件
+            - 错误时返回原模型确保工作流继续运行
         """
-        # 如果强度都为 0，直接返回原模型
+        # 如果强度都为 0，直接返回原模型（性能优化）
         if strength_model == 0 and strength_clip == 0:
             return model, clip
         
@@ -132,7 +143,7 @@ class PowerLoraLoader:
         # 遍历所有传入的参数，查找 LoRA 配置
         for key, value in kwargs.items():
             # 检查是否是有效的 LoRA 配置
-            if not self._is_valid_lora_config(key, value):
+            if not is_valid_lora_config(key, value):
                 continue
             
             # 如果 LoRA 未启用，跳过
@@ -161,25 +172,6 @@ class PowerLoraLoader:
                 )
         
         return (current_model, current_clip)
-    
-    @staticmethod
-    def _is_valid_lora_config(key: str, value: Any) -> bool:
-        """检查参数是否是有效的 LoRA 配置
-        
-        Args:
-            key: 参数键名
-            value: 参数值
-            
-        Returns:
-            是否是有效的 LoRA 配置
-        """
-        return (
-            key.upper().startswith('LORA_') and
-            isinstance(value, dict) and
-            'on' in value and
-            'lora' in value and
-            'strength' in value
-        )
 
 
 NODE_CLASS_MAPPINGS = {

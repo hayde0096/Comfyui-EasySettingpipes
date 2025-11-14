@@ -1,8 +1,19 @@
 import { app } from "../../scripts/app.js";
+import { PowerLoraInfoDialog } from "./power_lora_info_dialog.js";
 
 let loraListCache = null;
 let loraListPromise = null;
 
+/**
+ * 获取 LoRA 模型列表（带缓存）
+ * 
+ * 使用 Promise 缓存机制避免重复请求：
+ * - 如果缓存存在，直接返回缓存结果
+ * - 如果请求正在进行中，返回同一个 Promise
+ * - 否则发起新的请求并缓存结果
+ * 
+ * @returns {Promise<string[]>} LoRA 文件名列表
+ */
 function getLoraList() {
     if (loraListCache !== null) {
         return Promise.resolve(loraListCache);
@@ -15,7 +26,6 @@ function getLoraList() {
         return list;
     }).catch(err => {
         loraListPromise = null;
-        console.warn("获取 LoRA 列表失败:", err);
         return [];
     });
     return loraListPromise;
@@ -33,13 +43,32 @@ function fetchLoraList() {
             return loraListCache;
         })
         .catch(error => {
-            console.error("Failed to load LoRA list:", error);
             return [];
         });
 }
 
 function preloadLoraList() {
     getLoraList().catch(() => {});
+}
+
+// ===== Lora 信息弹窗 =====
+function showLoraInfoDialog(loraName) {
+    if (!loraName || loraName === "None") {
+        return;
+    }
+    
+    try {
+        if (typeof PowerLoraInfoDialog !== 'undefined') {
+            new PowerLoraInfoDialog(loraName).show();
+        } else {
+            // 如果 PowerLoraInfoDialog 不可用，使用其内置的简单对话框
+            const dialog = new PowerLoraInfoDialog(loraName);
+            dialog.createSimpleDialog();
+        }
+    } catch (error) {
+        // 如果所有方法都失败，静默处理
+        console.warn('Failed to show Lora info dialog:', error);
+    }
 }
 
 function getColorFromPalette(colorType) {
@@ -877,6 +906,15 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
                         
                         const menuItems = [
                             {
+                                content: `ℹ️ 显示信息`,
+                                callback: () => {
+                                    if (widget.value.lora && widget.value.lora !== "None") {
+                                        showLoraInfoDialog(widget.value.lora);
+                                    }
+                                }
+                            },
+                            null,
+                            {
                                 content: `${widget.value.on ? "⚫ 关闭此 Lora" : "🟢 开启此 Lora"}`,
                                 callback: () => {
                                     widget.value.on = !widget.value.on;
@@ -950,8 +988,5 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
 app.registerExtension(registerPowerLoraNode({ name: "PowerLoraLoader" }, false));
 app.registerExtension(registerPowerLoraNode({ name: "PowerLoraStacker" }, false));
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', preloadLoraList);
-} else {
-    preloadLoraList();
-}
+// 在模块加载时预加载 LoRA 列表
+preloadLoraList();

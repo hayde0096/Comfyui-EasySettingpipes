@@ -1,7 +1,7 @@
 [project]
 name = "Comfyui-EasySettingPipes"
 description = "A Sampler and another settings pipe, and a rgthree style lora loader&stacker for comfyui"
-version = "0.2.1"
+version = "0.2.2"
 license = {text = "MIT License"} 
 
 [project.urls]

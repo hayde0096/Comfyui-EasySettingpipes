@@ -16,6 +16,20 @@ class AnyType(str):
     Credit: pythongosssss, rgthree
     """
     def __ne__(self, __value: object) -> bool:
+        """
+        重写不等于运算符，总是返回 False
+        
+        这是实现"万能类型"的关键技巧：
+        - 任何类型与 AnyType 比较都会返回相等
+        - 使得 ComfyUI 的类型检查系统认为任何输入都匹配
+        - 配合 FlexibleOptionalInputType 实现动态输入
+        
+        Args:
+            __value: 要比较的值
+            
+        Returns:
+            总是返回 False，表示"相等"
+        """
         return False
 
 
@@ -210,3 +224,22 @@ def is_dict_value_falsy(data: Dict[str, Any], dict_key: str) -> bool:
     """
     val = get_dict_value(data, dict_key)
     return not val
+
+
+def is_valid_lora_config(key: str, value: Any) -> bool:
+    """检查参数是否是有效的 LoRA 配置
+    
+    Args:
+        key: 参数键名
+        value: 参数值
+    
+    Returns:
+        是否是有效的 LoRA 配置
+    """
+    return (
+        key.upper().startswith('LORA_') and
+        isinstance(value, dict) and
+        'on' in value and
+        'lora' in value and
+        'strength' in value
+    )

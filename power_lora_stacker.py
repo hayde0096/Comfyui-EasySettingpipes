@@ -6,7 +6,7 @@ Power LoRA Stacker - ComfyUI Custom Node
 from typing import Optional, List, Tuple, Dict, Any
 
 import folder_paths
-from .easy_sitting_utils import FlexibleOptionalInputType, any_type
+from .easy_sitting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
 
 
 class PowerLoraStacker:
@@ -46,27 +46,36 @@ class PowerLoraStacker:
     ) -> Tuple[Optional[List[Tuple[str, float, float]]]]:
         """创建 LoRA 堆栈
         
+        核心功能：
+        - 将多个 LoRA 配置组合成堆栈格式
+        - 支持堆栈链接（输入堆栈 + 当前配置）
+        - 过滤未启用的 LoRA 配置
+        - 兼容其他基于堆栈的节点（如 Efficiency 节点）
+        
         Args:
             lora_stack: 输入的 LoRA 堆栈（可选，用于堆栈链接）
             **kwargs: 包含 LoRA 配置的动态参数
             
         Returns:
             包含 LoRA 配置的堆栈列表，格式为 [(lora_name, model_strength, clip_strength), ...]
+            
+        Note:
+            - 堆栈格式：[(lora文件名, 模型强度, CLIP强度), ...]
+            - 空堆栈返回 None 而不是空列表
+            - 支持与其他堆栈节点链接使用
         """
         # 初始化结果堆栈
         result_stack: List[Tuple[str, float, float]] = []
         
-        # 如果有输入的 lora_stack，先添加进来
+        # 收集所有启用的 LoRA 配置
+        lora_items = self._collect_lora_items(kwargs)
+        # 先添加新收集的 lora_items
+        result_stack.extend(lora_items)
+        # 如果有输入的 lora_stack，最后再添加进来（堆栈链接功能）
         if lora_stack is not None and isinstance(lora_stack, list):
             result_stack.extend(lora_stack)
         
-        # 收集所有启用的 LoRA 配置
-        lora_items = self._collect_lora_items(kwargs)
-        
-        # 添加到结果栈
-        result_stack.extend(lora_items)
-        
-        # 如果栈为空，返回 None
+        # 如果栈为空，返回 None（ComfyUI 标准做法）
         if len(result_stack) == 0:
             return (None,)
         
@@ -86,7 +95,7 @@ class PowerLoraStacker:
         
         for key, value in kwargs.items():
             # 检查是否是有效的 LoRA widget 数据
-            if not PowerLoraStacker._is_valid_lora_config(key, value):
+            if not is_valid_lora_config(key, value):
                 continue
             
             # 只添加开启的 lora
@@ -105,25 +114,6 @@ class PowerLoraStacker:
             lora_items.append((lora_name, strength_model, strength_clip))
         
         return lora_items
-    
-    @staticmethod
-    def _is_valid_lora_config(key: str, value: Any) -> bool:
-        """检查参数是否是有效的 LoRA 配置
-        
-        Args:
-            key: 参数键名
-            value: 参数值
-            
-        Returns:
-            是否是有效的 LoRA 配置
-        """
-        return (
-            key.upper().startswith('LORA_') and
-            isinstance(value, dict) and
-            'on' in value and
-            'lora' in value and
-            'strength' in value
-        )
 
 
 NODE_CLASS_MAPPINGS = {
