@@ -931,15 +931,43 @@ function registerPowerLoraNode(nodeData, defaultDualMode = false) {
                                 }
                             }
                         ];
-                        
-                        new LiteGraph.ContextMenu(menuItems, {
-                            event: app.canvas.last_mouse_dragging_event || event,
-                        });
-                        
-                        return undefined;
+
+                        // Return the menu items to let the front-end (LGraphCanvas) display the menu.
+                        return menuItems;
                     }
                     
-                    return LGraphNode.prototype.getSlotMenuOptions?.call(this, slot);
+                    // Build a default slot menu similar to LGraphCanvas when a node
+                    // does not implement getSlotMenuOptions. This ensures outputs/inputs
+                    // that are not widget-related still show the standard menus.
+                    const fallbackMenu = [];
+                    if (slot?.output?.links?.length) {
+                        fallbackMenu.push({ content: 'Disconnect Links', slot });
+                    }
+
+                    const _slot = slot.input || slot.output;
+                    if (!_slot) {
+                        throw new TypeError('Both input and output slots were null when building fallback menu.');
+                    }
+
+                    if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
+                        fallbackMenu.push({ content: 'Rename Slot', slot });
+                    }
+
+                    if (_slot.removable) {
+                        fallbackMenu.push(null);
+                        fallbackMenu.push(_slot.locked ? { content: 'Cannot remove' } : { content: 'Remove Slot', slot, className: 'danger' });
+                    }
+
+                    if (this.getExtraSlotMenuOptions) {
+                        try {
+                            const extra = this.getExtraSlotMenuOptions(slot);
+                            if (Array.isArray(extra) && extra.length) fallbackMenu.push(...extra);
+                        } catch (e) {
+                            console.warn('getExtraSlotMenuOptions threw', e);
+                        }
+                    }
+
+                    return fallbackMenu;
                 };
                 
                 const originalConfigure = nodeType.prototype.configure;
