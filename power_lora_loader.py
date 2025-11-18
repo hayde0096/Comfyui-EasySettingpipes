@@ -179,5 +179,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PowerLoraLoader": "Power Lora Loader ",
+    "PowerLoraLoader": "Power Lora Loader",
 }
