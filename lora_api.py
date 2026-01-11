@@ -13,7 +13,7 @@ from server import PromptServer
 import requests
 
 import folder_paths
-from .easy_sitting_utils import get_dict_value
+from .easy_setting_utils import get_dict_value
 
 # 获取 PromptServer 实例并注册路由
 routes = PromptServer.instance.routes
@@ -318,7 +318,7 @@ def get_lora_info(lora_name: str, fetch_civitai: bool = False) -> Optional[Dict[
         return None
 
 
-@routes.get('/api/easy_sitting/loras/info')
+@routes.get('/api/easy_setting/loras/info')
 async def api_get_lora_info(request: web.Request) -> web.Response:
     """
     获取指定 Lora 的详细信息
@@ -380,7 +380,7 @@ async def api_get_lora_info(request: web.Request) -> web.Response:
         )
 
 
-@routes.get('/api/easy_sitting/loras/list')
+@routes.get('/api/easy_setting/loras/list')
 async def api_list_loras(request: web.Request) -> web.Response:
     """
     获取所有可用的 Lora 列表

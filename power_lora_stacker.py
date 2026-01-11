@@ -6,7 +6,7 @@ Power LoRA Stacker - ComfyUI Custom Node
 from typing import Optional, List, Tuple, Dict, Any
 
 import folder_paths
-from .easy_sitting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
+from .easy_setting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
 
 
 class PowerLoraStacker:
@@ -35,7 +35,7 @@ class PowerLoraStacker:
     RETURN_TYPES = ("LORA_STACK",)
     RETURN_NAMES = ("lora_stack",)
     FUNCTION = "create_stack"
-    CATEGORY = "easy sitting"
+    CATEGORY = "easy setting"
     INPUT_IS_LIST = False
     OUTPUT_NODE = False
 

@@ -100,7 +100,7 @@ class PowerLoraInfoDialog {
 
   async getModelInfo(file) {
     try {
-      const response = await fetch(`/api/easy_sitting/loras/info?file=${encodeURIComponent(file)}`);
+      const response = await fetch(`/api/easy_setting/loras/info?file=${encodeURIComponent(file)}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -359,7 +359,7 @@ class PowerLoraInfoDialog {
 
   async fetchFromCivitai(file) {
     try {
-      const response = await fetch(`/api/easy_sitting/loras/info?file=${encodeURIComponent(file)}&civitai=true`);
+      const response = await fetch(`/api/easy_setting/loras/info?file=${encodeURIComponent(file)}&civitai=true`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       return data;
@@ -371,7 +371,7 @@ class PowerLoraInfoDialog {
   async refreshModelInfo(file) {
     try {
       // 使用我们自己的 API 端点
-      const response = await fetch(`/api/easy_sitting/loras/info?file=${encodeURIComponent(file)}`);
+      const response = await fetch(`/api/easy_setting/loras/info?file=${encodeURIComponent(file)}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       return data;

@@ -4,7 +4,7 @@ import random
 import math
 from nodes import MAX_RESOLUTION
 
-from .easy_sitting_utils import any_type
+from .easy_setting_utils import any_type
 
 
 class ConvertAny:
@@ -44,7 +44,7 @@ class ConvertAny:
     RETURN_TYPES = (any_type,)
     RETURN_NAMES = ("Any_Output",)
     FUNCTION = "convert_any"
-    CATEGORY = "easy sitting"  
+    CATEGORY = "easy setting"  
     
     def convert_any(self, Any_input: str = ""):
         """转换任意输入
@@ -89,7 +89,7 @@ class SamplerSetup:
     RETURN_TYPES = ("SETUPPIPE",)
     RETURN_NAMES = ("setup_pipe",)
     FUNCTION = "build_pipe"
-    CATEGORY = "easy sitting"  
+    CATEGORY = "easy setting"  
 
     def build_pipe(self, steps, cfg, clip_skip, sampler_name, scheduler, 
                    width, height, swap_wh, batch_size):
@@ -139,7 +139,7 @@ class SamplerSetupUnpack:
         "width", "height", "batch_size", 
     )
     FUNCTION = "unpack_pipe"
-    CATEGORY = "easy sitting"  
+    CATEGORY = "easy setting"  
 
     def unpack_pipe(self, setup_pipe):
         # 安全地获取采样器和调度器值

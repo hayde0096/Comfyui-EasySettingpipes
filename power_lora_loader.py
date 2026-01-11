@@ -10,7 +10,7 @@ import folder_paths
 import comfy.utils
 import comfy.sd
 
-from .easy_sitting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
+from .easy_setting_utils import FlexibleOptionalInputType, any_type, is_valid_lora_config
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class PowerLoraLoader:
     
     RETURN_TYPES = ("MODEL", "CLIP")
     FUNCTION = "load_loras"
-    CATEGORY = "easy sitting"
+    CATEGORY = "easy setting"
     INPUT_IS_LIST = False
     OUTPUT_NODE = False
 
