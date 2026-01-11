@@ -67,13 +67,14 @@ class PowerLoraStacker:
         # 初始化结果堆栈
         result_stack: List[Tuple[str, float, float]] = []
         
-        # 收集所有启用的 LoRA 配置
-        lora_items = self._collect_lora_items(kwargs)
-        # 先添加新收集的 lora_items
-        result_stack.extend(lora_items)
-        # 如果有输入的 lora_stack，最后再添加进来（堆栈链接功能）
+        # 如果有输入的 lora_stack，先添加进来（堆栈链接功能）
         if lora_stack is not None and isinstance(lora_stack, list):
             result_stack.extend(lora_stack)
+
+        # 收集所有启用的 LoRA 配置
+        lora_items = self._collect_lora_items(kwargs)
+        # 再添加新收集的 lora_items
+        result_stack.extend(lora_items)
         
         # 如果栈为空，返回 None（ComfyUI 标准做法）
         if len(result_stack) == 0:
